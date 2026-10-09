@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>PROGRAM MERIDIAN — Earth Bench</title>
+<style>
+  :root {
+    --bg: #07060b;
+    --purple: #b14bff;
+    --purple-dim: #6d2ca3;
+    --green: #39ff88;
+    --green-dim: #147a45;
+    --ink: #efeaff;
+    --muted: #9a90b0;
+    --danger: #ff4d6d;
+    --panel: #120e1c;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: "Segoe UI", system-ui, sans-serif; }
+  body { display: flex; align-items: center; justify-content: center; }
+  #app { width: min(430px, 100vw); height: 100dvh; background: radial-gradient(120% 80% at 50% 0%, #1a1030 0%, #07060b 55%); position: relative; overflow: hidden; border: 1px solid #2a2040; touch-action: manipulation; }
+  button, input { font-family: inherit; }
+  button { cursor: pointer; }
+  .screen { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 22px 18px 18px; }
+  .hidden { display: none !important; }
+  h1 { font-size: 13px; letter-spacing: 0.42em; color: var(--green); margin: 0 0 6px; font-weight: 600; }
+  h2 { font-size: 28px; margin: 0 0 8px; line-height: 1.05; }
+  p { color: var(--muted); line-height: 1.45; margin: 0 0 12px; }
+  .glow { text-shadow: 0 0 12px rgba(57, 255, 136, 0.45); }
+  .btn {
+    background: #140c22; color: var(--ink); border: 1px solid var(--purple);
+    padding: 14px 16px; border-radius: 12px; font-size: 16px; letter-spacing: 0.04em;
+    box-shadow: 0 0 18px rgba(177, 75, 255, 0.25);
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn.green { border-color: var(--green); box-shadow: 0 0 18px rgba(57, 255, 136, 0.25); color: var(--green); }
+  .btn:disabled { opacity: 0.35; box-shadow: none; cursor: default; }
+  .stack { display: flex; flex-direction: column; gap: 10px; margin-top: auto; }
+  #lane { flex: 1; position: relative; margin: 8px 0; border: 1px solid #2c2144; border-radius: 16px; overflow: hidden; background: linear-gradient(#10101a, #1a1028); }
+  canvas { width: 100%; height: 100%; display: block; }
+  .hud { display: flex; justify-content: space-between; font-size: 13px; letter-spacing: 0.06em; color: var(--green); }
+  .prompt {
+    position: absolute; left: 12px; right: 12px; bottom: 12px; background: rgba(8, 6, 14, 0.88);
+    border: 1px solid var(--purple); border-radius: 12px; padding: 10px 12px; font-size: 14px;
+  }
+  .prompt b { color: var(--green); }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; }
+  .char {
+    border: 1px solid #3a2a55; border-radius: 14px; padding: 12px; background: #100c18; text-align: center;
+  }
+  .char.sel { border-color: var(--green); box-shadow: 0 0 16px rgba(57, 255, 136, 0.3); }
+  .fig { height: 120px; display: flex; align-items: flex-end; justify-content: center; font-size: 64px; }
+  .slot {
+    border: 1px solid #3a2a55; border-radius: 14px; padding: 12px; background: #100c18; margin-bottom: 10px;
+  }
+  .slot.lock { opacity: 0.55; }
+  .slot .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .tag { font-size: 11px; letter-spacing: 0.16em; color: var(--purple); }
+  .squirt {
+    display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px;
+  }
+  .hat {
+    width: 54px; height: 54px; border-radius: 50%; border: 1px solid var(--green);
+    display: grid; place-items: center; box-shadow: 0 0 16px rgba(57, 255, 136, 0.35); font-size: 26px; flex: none;
+  }
+  input[type="text"] {
+    width: 100%; background: #0c0a12; color: var(--ink); border: 1px solid #3a2a55; border-radius: 10px; padding: 12px;
+  }
+  .log { font-size: 13px; color: var(--muted); min-height: 36px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <section id="home" class="screen">
+    <h1>PROGRAM MERIDIAN</h1>
+    <h2 class="glow">Earth is already open.</h2>
+    <p>A secret cell. A realm under the crust. A war with no clear end.</p>
+    <div class="stack">
+      <button class="btn green" id="start">Start Game</button>
+    </div>
+  </section>
+
+  <section id="intro" class="screen hidden">
+    <h1>SQUIRT // VOICE ONLY</h1>
+    <h2>Before the lane.</h2>
+    <p id="introLine"></p>
+    <div class="stack">
+      <button class="btn" id="toLane">Hold the base</button>
+    </div>
+  </section>
+
+  <section id="fight" class="screen hidden">
+    <div class="hud">
+      <span id="waveLabel">WAVE 1</span>
+      <span id="cashLabel">$ 0</span>
+      <span id="baseLabel">BASE 20</span>
+    </div>
+    <div id="lane"><canvas id="c"></canvas></div>
+    <div class="prompt" id="prompt">Tap the lit pad.</div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="upA" disabled>Upgrade A</button>
+      <button class="btn" id="upB" disabled>Upgrade B</button>
+    </div>
+  </section>
+
+  <section id="pick" class="screen hidden">
+    <h1>MERIDIAN PATCH</h1>
+    <h2>Who wears it.</h2>
+    <p>No card. The operator walks out already patched.</p>
+    <div class="row">
+      <div class="char" id="boy" data-g="boy"><div class="fig">▣</div><b>Boy</b><p>Rough kit. Same insignia.</p></div>
+      <div class="char" id="girl" data-g="girl"><div class="fig">◈</div><b>Girl</b><p>Minimal kit. Same insignia.</p></div>
+    </div>
+    <div class="stack">
+      <input id="name" type="text" placeholder="Name" maxlength="16" />
+      <div class="row">
+        <button class="btn" id="dice">Dice</button>
+        <button class="btn green" id="confirm" disabled>Confirm</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="bench" class="screen hidden">
+    <div class="squirt">
+      <div class="hat">🎩</div>
+      <div>
+        <h1>SQUIRT // BENCH</h1>
+        <p id="squirtLine">You pulled me out of their ship. I kept the record. They are not done.</p>
+      </div>
+    </div>
+    <div class="hud"><span id="who"></span><span id="scrapLabel">SCRAP 260</span></div>
+    <div class="log" id="log">Earth clear paid the live bench. Ship stays dark.</div>
+    <div class="slot" id="slotChar">
+      <div class="top"><div><div class="tag">CHARACTER</div><b>Power rank <span id="charRank">0</span>/5</b></div><button class="btn" id="buyChar">Buy 100</button></div>
+      <p>Field aura. Towers you own hit harder next lane.</p>
+    </div>
+    <div class="slot" id="slotA">
+      <div class="top"><div><div class="tag">TOWER A</div><b>Floor <span id="floorA">0</span></b></div><button class="btn" id="buyA">Buy 80</button></div>
+      <p>Ground and air. Next level starts at this rank.</p>
+    </div>
+    <div class="slot" id="slotB">
+      <div class="top"><div><div class="tag">TOWER B</div><b>Floor <span id="floorB">0</span></b></div><button class="btn" id="buyB">Buy 80</button></div>
+      <p>Air only. The flyer gun.</p>
+    </div>
+    <div class="slot lock">
+      <div class="top"><div><div class="tag">SHIP YARD</div><b>Locked</b></div><button class="btn" id="buyShip" disabled>No hull</button></div>
+      <p>No hull. Stop touching it.</p>
+    </div>
+  </section>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const screens = ["home","intro","fight","pick","bench"];
+function show(id) { screens.forEach(s => $(s).classList.toggle("hidden", s !== id)); }
+
+const intro = [
+  "They were already under you. The bombs opened the door.",
+  "I watched your leaders spend the world. The others decided you were the threat.",
+  "Meridian kept a list. You are on it. Hold the base."
+];
+let introIdx = 0;
+$("start").onclick = () => { introIdx = 0; $("introLine").textContent = intro[0]; show("intro"); };
+$("toLane").onclick = () => {
+  introIdx++;
+  if (introIdx < intro.length) { $("introLine").textContent = intro[introIdx]; return; }
+  show("fight");
+  startFight();
+};
+
+const names = ["Voss", "Kane", "Rook", "Sable", "Hex", "Quinn", "Jett", "Marrow"];
+let gender = null;
+document.querySelectorAll(".char").forEach(el => el.onclick = () => {
+  gender = el.dataset.g;
+  document.querySelectorAll(".char").forEach(c => c.classList.toggle("sel", c === el));
+  $("confirm").disabled = false;
+});
+$("dice").onclick = () => { $("name").value = names[Math.floor(Math.random()*names.length)]; };
+$("confirm").onclick = () => {
+  const n = $("name").value.trim() || (gender === "girl" ? "Sable" : "Kane");
+  state.player = { name: n, gender, power: 0 };
+  $("who").textContent = n.toUpperCase() + " // " + gender.toUpperCase();
+  $("squirtLine").textContent = "You pulled me out of their ship. I kept the record. They are not done. Earth is open.";
+  show("bench");
+  renderBench();
+};
+
+const state = {
+  wave: 1, cash: 0, base: 20, scrap: 0,
+  placed: [], ranks: { A: 0, B: 0 },
+  unlockedB: false, token: false, tokenTaken: false,
+  waiting: true, player: null
+};
+const COSTS = { upA: [0, 8, 14, 22, 34], upB: [0, 10, 16, 24, 36], placeA: 10, placeB: 12 };
+const GRANT = 260;
+const PRICE = { char: 100, A: 80, B: 80 };
+
+let ctx, W, H, enemies, shots, raf, pads;
+function resize() {
+  const c = $("c");
+  W = c.width = c.clientWidth * 2;
+  H = c.height = c.clientHeight * 2;
+  ctx = c.getContext("2d");
+}
+function startFight() {
+  resize();
+  enemies = []; shots = [];
+  pads = [
+    { x: 0.28, y: 0.62, open: true, kind: null },
+    { x: 0.48, y: 0.62, open: false, kind: null },
+    { x: 0.68, y: 0.62, open: false, kind: null },
+    { x: 0.58, y: 0.38, open: false, kind: null }
+  ];
+  state.wave = 1; state.cash = 0; state.base = 20; state.waiting = true;
+  setPrompt("Tap the lit pad. One tower.");
+  loop();
+  spawnWave();
+}
+function setPrompt(t) { $("prompt").innerHTML = t; }
+function hud() {
+  $("waveLabel").textContent = "WAVE " + state.wave;
+  $("cashLabel").textContent = "$ " + state.cash;
+  $("baseLabel").textContent = "BASE " + state.base;
+  $("upA").disabled = !state.placed.some(p => p.kind === "A" && p.rank < 5) || state.cash < COSTS.upA[nextRank("A")];
+  $("upB").disabled = !state.placed.some(p => p.kind === "B" && p.rank < 5) || state.cash < COSTS.upB[nextRank("B")];
+}
+function nextRank(k) {
+  const t = state.placed.find(p => p.kind === k);
+  return t ? Math.min(5, t.rank + 1) : 1;
+}
+function dmg(kind, rank) { return kind === "A" ? 8 + rank * 6 : 14 + rank * 8; }
+function range(kind, rank) { return kind === "A" ? 70 + rank * 14 : 90 + rank * 16; }
+
+const script = {
+  1: { cash: 8, prompt: "Tap upgrade. Rank changes range.", need: "up" },
+  2: { cash: 10, prompt: "Upgrade again, or place another A. Not both.", need: "choice" },
+  3: { cash: 12, prompt: "New tower. Air only. Place it.", need: "B" },
+  4: { cash: 16, prompt: "Flyers. A plinks them. B burns them down.", need: "fight" },
+  5: { cash: 18, prompt: "One buy, then hold. Watch for the patch.", need: "token" }
+};
+
+function spawnWave() {
+  const n = 3 + state.wave;
+  const fly = state.wave >= 4;
+  for (let i = 0; i < n; i++) {
+    const air = fly && (i % 2 === 0 || state.wave === 4);
+    enemies.push({
+      t: -i * 0.55, x: 0.08, y: air ? 0.34 : 0.72, air, hp: air ? 46 : 24, max: air ? 46 : 24, spd: air ? 0.055 : 0.04
+    });
+  }
+  state.waiting = false;
+}
+function endWave() {
+  const bonus = script[state.wave].cash;
+  state.cash += bonus;
+  if (state.wave === 3) { state.unlockedB = true; pads[3].open = true; }
+  if (state.wave === 2) pads[1].open = true;
+  if (state.wave < 5) {
+    state.wave++;
+    setPrompt("<b>Clear bonus +" + bonus + ".</b> " + script[state.wave].prompt);
+    state.waiting = true;
+    setTimeout(() => { if (state.wave === 5) state.token = true; spawnWave(); }, 900);
+  } else {
+    state.scrap = GRANT;
+    setPrompt("<b>Base held.</b> Patch is on them. Pick who walks out.");
+    setTimeout(() => show("pick"), 700);
+  }
+  hud();
+}
+
+$("c").addEventListener("pointerup", (e) => {
+  const r = $("c").getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width;
+  const y = (e.clientY - r.top) / r.height;
+  if (state.token && !state.tokenTaken) {
+    state.tokenTaken = true;
+    setPrompt("Patch taken. It goes on the uniform.");
+    return;
+  }
+  const pad = pads.find(p => p.open && !p.kind && Math.hypot(p.x - x, p.y - y) < 0.08);
+  if (!pad) return;
+  const wantB = state.unlockedB && state.wave === 3 && !state.placed.some(p => p.kind === "B");
+  const kind = wantB ? "B" : "A";
+  const cost = kind === "B" ? COSTS.placeB : COSTS.placeA;
+  if (state.wave === 1 && state.placed.length) return;
+  if (state.cash < cost && state.placed.length) return;
+  if (state.placed.length) state.cash -= cost;
+  pad.kind = kind;
+  pad.rank = 1;
+  state.placed.push(pad);
+  if (state.wave === 1) setPrompt(script[1].prompt);
+  hud();
+});
+function upgrade(kind) {
+  const t = state.placed.find(p => p.kind === kind && p.rank < 5);
+  if (!t) return;
+  const cost = (kind === "A" ? COSTS.upA : COSTS.upB)[t.rank];
+  if (state.cash < cost) return;
+  state.cash -= cost;
+  t.rank++;
+  hud();
+}
+$("upA").onclick = () => upgrade("A");
+$("upB").onclick = () => upgrade("B");
+
+function loop() {
+  if ($("fight").classList.contains("hidden")) return;
+  resize();
+  const g = ctx;
+  g.clearRect(0, 0, W, H);
+  g.strokeStyle = "#3a2458"; g.lineWidth = 18;
+  g.beginPath(); g.moveTo(W*0.06, H*0.72); g.lineTo(W*0.92, H*0.72); g.stroke();
+  g.strokeStyle = "#241838"; g.lineWidth = 10;
+  g.beginPath(); g.moveTo(W*0.06, H*0.34); g.lineTo(W*0.92, H*0.34); g.stroke();
+  g.fillStyle = "#39ff88"; g.fillRect(W*0.88, H*0.62, 18, 70);
+  pads.forEach(p => {
+    g.beginPath(); g.arc(p.x*W, p.y*H, 16, 0, 7);
+    g.fillStyle = p.kind ? (p.kind === "B" ? "#39ff88" : "#b14bff") : (p.open ? "#2a1848" : "#14101c");
+    g.fill();
+    if (p.kind) {
+      g.strokeStyle = "rgba(57,255,136,0.35)";
+      g.beginPath(); g.arc(p.x*W, p.y*H, range(p.kind, p.rank), 0, 7); g.stroke();
+      g.fillStyle = "#efeaff"; g.font = "18px sans-serif"; g.fillText(p.rank, p.x*W - 5, p.y*H + 5);
+    }
+  });
+  enemies.forEach(en => {
+    if (en.t < 0) { en.t += 0.016; return; }
+    en.x += en.spd * 0.016 * 60 * 0.01;
+    g.fillStyle = en.air ? "#39ff88" : "#ff4d6d";
+    g.fillRect(en.x*W, en.y*H, 14, 10);
+    g.fillStyle = "#222"; g.fillRect(en.x*W, en.y*H - 6, 14, 3);
+    g.fillStyle = "#39ff88"; g.fillRect(en.x*W, en.y*H - 6, 14 * (en.hp/en.max), 3);
+    if (en.x > 0.9) { state.base = Math.max(0, state.base - (en.air ? 4 : 2)); en.hp = 0; }
+  });
+  state.placed.forEach(t => {
+    const target = enemies.filter(en => en.t >= 0 && en.hp > 0 && (!en.air || t.kind) && (t.kind === "B" ? en.air : true) && Math.hypot((t.x-en.x)*W, (t.y-en.y)*H) < range(t.kind, t.rank)).sort((a,b)=>a.x<b.x?1:-1)[0];
+    if (!target || Math.random() > 0.04) return;
+    const hit = dmg(t.kind, t.rank) * (target.air && t.kind === "A" ? 0.25 : 1);
+    target.hp -= hit;
+    if (target.hp <= 0) state.cash += target.air ? 4 : 2;
+  });
+  if (state.token && !state.tokenTaken) {
+    const px = 0.5 + Math.sin(Date.now()/400)*0.25;
+    g.fillStyle = "#b14bff"; g.fillRect(px*W, H*0.2, 22, 16);
+    g.fillStyle = "#39ff88"; g.fillRect(px*W+4, H*0.2+4, 14, 8);
+  }
+  enemies = enemies.filter(en => en.hp > 0);
+  hud();
+  if (!state.waiting && enemies.length === 0 && state.base > 0) endWave();
+  if (state.base <= 0) setPrompt("Base fell. Meridian does not lose this one — reload.");
+  raf = requestAnimationFrame(loop);
+}
+
+const bench = { char: 0, A: 0, B: 0, scrap: GRANT };
+function renderBench() {
+  bench.scrap = state.scrap;
+  $("scrapLabel").textContent = "SCRAP " + bench.scrap;
+  $("charRank").textContent = bench.char;
+  $("floorA").textContent = bench.A;
+  $("floorB").textContent = bench.B;
+  $("buyChar").disabled = bench.char >= 5 || bench.scrap < PRICE.char;
+  $("buyA").disabled = bench.A >= 5 || bench.scrap < PRICE.A;
+  $("buyB").disabled = bench.B >= 5 || bench.scrap < PRICE.B;
+  $("buyChar").textContent = bench.char >= 5 ? "Max" : "Buy " + PRICE.char;
+  $("buyA").textContent = bench.A >= 5 ? "Max" : "Buy " + PRICE.A;
+  $("buyB").textContent = bench.B >= 5 ? "Max" : "Buy " + PRICE.B;
+}
+function buy(key, price, line) {
+  if (bench.scrap < price) return;
+  bench.scrap -= price;
+  bench[key]++;
+  state.scrap = bench.scrap;
+  $("log").textContent = line;
+  $("squirtLine").textContent = key === "char"
+    ? "Fine. Your little aura. Try not to trip on it."
+    : "Floor raised. I still do not shoot. That is your button.";
+  renderBench();
+}
+$("buyChar").onclick = () => buy("char", PRICE.char, "Character power rank raised. Next lane towers hit harder.");
+$("buyA").onclick = () => buy("A", PRICE.A, "Tower A floor raised. Next Earth lane starts higher.");
+$("buyB").onclick = () => buy("B", PRICE.B, "Tower B floor raised. Air gun keeps its rank.");
+$("buyShip").onclick = () => { $("squirtLine").textContent = "No hull. Stop touching it."; };
+</script>
+</body>
+</html>
