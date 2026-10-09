@@ -2,385 +2,506 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>PROGRAM MERIDIAN — Earth Bench</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>PROGRAM MERIDIAN</title>
 <style>
   :root {
-    --bg: #07060b;
-    --purple: #b14bff;
-    --purple-dim: #6d2ca3;
-    --green: #39ff88;
-    --green-dim: #147a45;
-    --ink: #efeaff;
-    --muted: #9a90b0;
-    --danger: #ff4d6d;
-    --panel: #120e1c;
+    --bg: #07060c;
+    --ink: #f4eeff;
+    --muted: #a99bc4;
+    --purple: #c26bff;
+    --green: #3dff9a;
+    --panel: rgba(10, 8, 16, 0.92);
   }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: "Segoe UI", system-ui, sans-serif; }
-  body { display: flex; align-items: center; justify-content: center; }
-  #app { width: min(430px, 100vw); height: 100dvh; background: radial-gradient(120% 80% at 50% 0%, #1a1030 0%, #07060b 55%); position: relative; overflow: hidden; border: 1px solid #2a2040; touch-action: manipulation; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: #05040a; color: var(--ink); font-family: "Avenir Next", "Segoe UI", sans-serif; }
   button, input { font-family: inherit; }
   button { cursor: pointer; }
-  .screen { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 22px 18px 18px; }
+  #app {
+    width: min(480px, 100vw);
+    height: 100dvh;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(90% 40% at 50% 0%, rgba(194, 107, 255, 0.18), transparent 60%),
+      linear-gradient(180deg, #120c1e 0%, #07060c 40%, #10140f 100%);
+  }
+  .screen { position: absolute; inset: 0; display: flex; flex-direction: column; padding: calc(18px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); }
   .hidden { display: none !important; }
-  h1 { font-size: 13px; letter-spacing: 0.42em; color: var(--green); margin: 0 0 6px; font-weight: 600; }
-  h2 { font-size: 28px; margin: 0 0 8px; line-height: 1.05; }
-  p { color: var(--muted); line-height: 1.45; margin: 0 0 12px; }
-  .glow { text-shadow: 0 0 12px rgba(57, 255, 136, 0.45); }
+  .kicker { letter-spacing: 0.38em; font-size: 11px; color: var(--green); margin: 0 0 8px; }
+  h2 { font-size: 34px; line-height: 0.95; margin: 0 0 12px; font-weight: 700; }
+  p { color: var(--muted); line-height: 1.4; margin: 0; }
   .btn {
-    background: #140c22; color: var(--ink); border: 1px solid var(--purple);
-    padding: 14px 16px; border-radius: 12px; font-size: 16px; letter-spacing: 0.04em;
-    box-shadow: 0 0 18px rgba(177, 75, 255, 0.25);
+    min-height: 52px;
+    border-radius: 14px;
+    border: 1px solid rgba(194, 107, 255, 0.7);
+    background: linear-gradient(180deg, #241433, #140c20);
+    color: white;
+    font-size: 16px;
+    letter-spacing: 0.04em;
   }
-  .btn:active { transform: translateY(1px); }
-  .btn.green { border-color: var(--green); box-shadow: 0 0 18px rgba(57, 255, 136, 0.25); color: var(--green); }
-  .btn:disabled { opacity: 0.35; box-shadow: none; cursor: default; }
-  .stack { display: flex; flex-direction: column; gap: 10px; margin-top: auto; }
-  #lane { flex: 1; position: relative; margin: 8px 0; border: 1px solid #2c2144; border-radius: 16px; overflow: hidden; background: linear-gradient(#10101a, #1a1028); }
-  canvas { width: 100%; height: 100%; display: block; }
-  .hud { display: flex; justify-content: space-between; font-size: 13px; letter-spacing: 0.06em; color: var(--green); }
-  .prompt {
-    position: absolute; left: 12px; right: 12px; bottom: 12px; background: rgba(8, 6, 14, 0.88);
-    border: 1px solid var(--purple); border-radius: 12px; padding: 10px 12px; font-size: 14px;
+  .btn.green { border-color: rgba(61, 255, 154, 0.8); color: var(--green); }
+  .btn:disabled { opacity: 0.38; }
+  .btn.pulse { animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 18px rgba(61, 255, 154, 0.55); } }
+  .stack { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+  .hud {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 8px;
   }
-  .prompt b { color: var(--green); }
+  .pill {
+    background: var(--panel);
+    border: 1px solid rgba(194, 107, 255, 0.35);
+    border-radius: 12px;
+    padding: 8px 10px;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+  }
+  .pill b { display: block; color: var(--green); font-size: 15px; letter-spacing: 0; margin-top: 2px; }
+  #stage {
+    flex: 1;
+    min-height: 0;
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid rgba(194, 107, 255, 0.35);
+    position: relative;
+    background: #121018;
+  }
+  canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+  .toast {
+    position: absolute;
+    left: 10px; right: 10px; top: 10px;
+    background: rgba(7, 6, 12, 0.82);
+    border: 1px solid rgba(61, 255, 154, 0.45);
+    border-radius: 12px;
+    padding: 8px 10px;
+    font-size: 13px;
+    pointer-events: none;
+  }
+  .dock { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
   .row { display: flex; gap: 8px; }
   .row > * { flex: 1; }
-  .char {
-    border: 1px solid #3a2a55; border-radius: 14px; padding: 12px; background: #100c18; text-align: center;
+  .card {
+    border: 1px solid rgba(194, 107, 255, 0.35);
+    border-radius: 16px;
+    background: rgba(12, 9, 20, 0.9);
+    padding: 10px;
+    text-align: center;
   }
-  .char.sel { border-color: var(--green); box-shadow: 0 0 16px rgba(57, 255, 136, 0.3); }
-  .fig { height: 120px; display: flex; align-items: flex-end; justify-content: center; font-size: 64px; }
-  .slot {
-    border: 1px solid #3a2a55; border-radius: 14px; padding: 12px; background: #100c18; margin-bottom: 10px;
+  .card.sel { border-color: var(--green); box-shadow: 0 0 16px rgba(61, 255, 154, 0.25); }
+  .portrait { height: 150px; }
+  input {
+    width: 100%; min-height: 48px; border-radius: 12px;
+    border: 1px solid rgba(194, 107, 255, 0.4);
+    background: #0c0a12; color: white; padding: 0 12px; font-size: 16px;
   }
-  .slot.lock { opacity: 0.55; }
+  .slot { border: 1px solid rgba(194, 107, 255, 0.3); border-radius: 14px; padding: 12px; margin-bottom: 8px; background: rgba(12, 9, 20, 0.88); }
   .slot .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-  .tag { font-size: 11px; letter-spacing: 0.16em; color: var(--purple); }
-  .squirt {
-    display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px;
+  .tag { font-size: 10px; letter-spacing: 0.18em; color: var(--purple); }
+  .lock { opacity: 0.5; }
+  .squirt { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+  .orb {
+    width: 54px; height: 54px; border-radius: 50%; flex: none;
+    display: grid; place-items: center; font-size: 28px;
+    border: 1px solid var(--green);
+    box-shadow: 0 0 16px rgba(61, 255, 154, 0.4);
+    background: radial-gradient(circle at 40% 30%, #2a1844, #07060c);
   }
-  .hat {
-    width: 54px; height: 54px; border-radius: 50%; border: 1px solid var(--green);
-    display: grid; place-items: center; box-shadow: 0 0 16px rgba(57, 255, 136, 0.35); font-size: 26px; flex: none;
-  }
-  input[type="text"] {
-    width: 100%; background: #0c0a12; color: var(--ink); border: 1px solid #3a2a55; border-radius: 10px; padding: 12px;
-  }
-  .log { font-size: 13px; color: var(--muted); min-height: 36px; }
 </style>
 </head>
 <body>
 <div id="app">
   <section id="home" class="screen">
-    <h1>PROGRAM MERIDIAN</h1>
-    <h2 class="glow">Earth is already open.</h2>
-    <p>A secret cell. A realm under the crust. A war with no clear end.</p>
+    <p class="kicker">PROGRAM MERIDIAN</p>
+    <h2>Hold the Earth base.</h2>
+    <p>They were already under the crust. The bombs opened the door. You are on the list.</p>
     <div class="stack">
       <button class="btn green" id="start">Start Game</button>
     </div>
   </section>
 
-  <section id="intro" class="screen hidden">
-    <h1>SQUIRT // VOICE ONLY</h1>
-    <h2>Before the lane.</h2>
-    <p id="introLine"></p>
-    <div class="stack">
-      <button class="btn" id="toLane">Hold the base</button>
-    </div>
-  </section>
-
   <section id="fight" class="screen hidden">
     <div class="hud">
-      <span id="waveLabel">WAVE 1</span>
-      <span id="cashLabel">$ 0</span>
-      <span id="baseLabel">BASE 20</span>
+      <div class="pill">WAVE<b id="waveLabel">1</b></div>
+      <div class="pill">CASH<b id="cashLabel">$0</b></div>
+      <div class="pill">BASE<b id="baseLabel">20</b></div>
     </div>
-    <div id="lane"><canvas id="c"></canvas></div>
-    <div class="prompt" id="prompt">Tap the lit pad.</div>
-    <div class="row" style="margin-top:10px">
+    <div id="stage">
+      <canvas id="c"></canvas>
+      <div class="toast" id="toast">Place the tower on the lit pad.</div>
+    </div>
+    <div class="dock">
       <button class="btn" id="upA" disabled>Upgrade A</button>
       <button class="btn" id="upB" disabled>Upgrade B</button>
     </div>
   </section>
 
   <section id="pick" class="screen hidden">
-    <h1>MERIDIAN PATCH</h1>
+    <p class="kicker">MERIDIAN PATCH</p>
     <h2>Who wears it.</h2>
-    <p>No card. The operator walks out already patched.</p>
-    <div class="row">
-      <div class="char" id="boy" data-g="boy"><div class="fig">▣</div><b>Boy</b><p>Rough kit. Same insignia.</p></div>
-      <div class="char" id="girl" data-g="girl"><div class="fig">◈</div><b>Girl</b><p>Minimal kit. Same insignia.</p></div>
+    <p>No card. They walk out already patched.</p>
+    <div class="row" style="margin-top:12px">
+      <div class="card" id="boy" data-g="boy"><canvas class="portrait" id="boyCanvas"></canvas><b>Boy</b><p>Heavy kit.</p></div>
+      <div class="card" id="girl" data-g="girl"><canvas class="portrait" id="girlCanvas"></canvas><b>Girl</b><p>Light kit.</p></div>
     </div>
     <div class="stack">
-      <input id="name" type="text" placeholder="Name" maxlength="16" />
+      <input id="name" placeholder="Name" maxlength="16" />
       <div class="row">
-        <button class="btn" id="dice">Dice</button>
+        <button class="btn" id="dice">Randomize</button>
         <button class="btn green" id="confirm" disabled>Confirm</button>
       </div>
     </div>
   </section>
 
   <section id="bench" class="screen hidden">
-    <div class="squirt">
-      <div class="hat">🎩</div>
-      <div>
-        <h1>SQUIRT // BENCH</h1>
-        <p id="squirtLine">You pulled me out of their ship. I kept the record. They are not done.</p>
-      </div>
-    </div>
-    <div class="hud"><span id="who"></span><span id="scrapLabel">SCRAP 260</span></div>
-    <div class="log" id="log">Earth clear paid the live bench. Ship stays dark.</div>
-    <div class="slot" id="slotChar">
-      <div class="top"><div><div class="tag">CHARACTER</div><b>Power rank <span id="charRank">0</span>/5</b></div><button class="btn" id="buyChar">Buy 100</button></div>
-      <p>Field aura. Towers you own hit harder next lane.</p>
-    </div>
-    <div class="slot" id="slotA">
-      <div class="top"><div><div class="tag">TOWER A</div><b>Floor <span id="floorA">0</span></b></div><button class="btn" id="buyA">Buy 80</button></div>
-      <p>Ground and air. Next level starts at this rank.</p>
-    </div>
-    <div class="slot" id="slotB">
-      <div class="top"><div><div class="tag">TOWER B</div><b>Floor <span id="floorB">0</span></b></div><button class="btn" id="buyB">Buy 80</button></div>
-      <p>Air only. The flyer gun.</p>
-    </div>
-    <div class="slot lock">
-      <div class="top"><div><div class="tag">SHIP YARD</div><b>Locked</b></div><button class="btn" id="buyShip" disabled>No hull</button></div>
-      <p>No hull. Stop touching it.</p>
-    </div>
+    <div class="squirt"><div class="orb">🎩</div><div><p class="kicker">SQUIRT</p><p id="squirtLine">You pulled me out of their ship. Earth is open.</p></div></div>
+    <div class="hud"><div class="pill">OPERATOR<b id="who">—</b></div><div class="pill">SCRAP<b id="scrapLabel">260</b></div><div class="pill">AURA<b id="auraLabel">0</b></div></div>
+    <div class="slot"><div class="top"><div><div class="tag">CHARACTER</div><b>Power <span id="charRank">0</span>/5</b></div><button class="btn" id="buyChar">100</button></div></div>
+    <div class="slot"><div class="top"><div><div class="tag">TOWER A FLOOR</div><b>Rank <span id="floorA">0</span></b></div><button class="btn" id="buyA">80</button></div></div>
+    <div class="slot"><div class="top"><div><div class="tag">TOWER B FLOOR</div><b>Rank <span id="floorB">0</span></b></div><button class="btn" id="buyB">80</button></div></div>
+    <div class="slot lock"><div class="top"><div><div class="tag">SHIP YARD</div><b>No hull</b></div><button class="btn" disabled>Locked</button></div></div>
   </section>
 </div>
 <script>
 const $ = (id) => document.getElementById(id);
-const screens = ["home","intro","fight","pick","bench"];
-function show(id) { screens.forEach(s => $(s).classList.toggle("hidden", s !== id)); }
+const show = (id) => ["home","fight","pick","bench"].forEach(s => $(s).classList.toggle("hidden", s !== id));
+const toast = (t) => { $("toast").textContent = t; };
 
-const intro = [
-  "They were already under you. The bombs opened the door.",
-  "I watched your leaders spend the world. The others decided you were the threat.",
-  "Meridian kept a list. You are on it. Hold the base."
-];
-let introIdx = 0;
-$("start").onclick = () => { introIdx = 0; $("introLine").textContent = intro[0]; show("intro"); };
-$("toLane").onclick = () => {
-  introIdx++;
-  if (introIdx < intro.length) { $("introLine").textContent = intro[introIdx]; return; }
-  show("fight");
-  startFight();
-};
-
-const names = ["Voss", "Kane", "Rook", "Sable", "Hex", "Quinn", "Jett", "Marrow"];
+const names = ["Voss","Kane","Rook","Sable","Hex","Quinn","Jett","Marrow"];
 let gender = null;
-document.querySelectorAll(".char").forEach(el => el.onclick = () => {
+function paintOp(canvas, girl) {
+  const c = canvas.getContext("2d");
+  const w = canvas.width = canvas.clientWidth * 2;
+  const h = canvas.height = canvas.clientHeight * 2;
+  c.clearRect(0, 0, w, h);
+  c.translate(w/2, h*0.92);
+  c.scale(w/180, w/180);
+  c.fillStyle = "#14101c";
+  c.fillRect(-70, -150, 140, 150);
+  c.fillStyle = girl ? "#f0c8b0" : "#d7b294";
+  c.beginPath(); c.arc(0, -118, 16, 0, 7); c.fill();
+  c.fillStyle = girl ? "#1a1028" : "#2a241c";
+  c.fillRect(-16, -132, 32, 10);
+  c.fillStyle = "#1a1020";
+  c.fillRect(-18, -108, 36, 46);
+  c.strokeStyle = "#3dff9a"; c.lineWidth = 2;
+  c.strokeRect(-20, -78, 12, 8);
+  if (girl) {
+    c.fillStyle = "#2a1844";
+    c.beginPath(); c.moveTo(-16,-108); c.lineTo(16,-108); c.lineTo(10,-62); c.lineTo(-10,-62); c.fill();
+    c.fillStyle = "#c26bff";
+    c.fillRect(-14, -96, 28, 8);
+  } else {
+    c.fillStyle = "#241433";
+    c.fillRect(-22, -108, 44, 40);
+    c.fillStyle = "#6d6a72";
+    c.fillRect(-24, -96, 48, 10);
+  }
+  c.fillStyle = "#101018";
+  c.fillRect(-12, -62, 8, 28);
+  c.fillRect(4, -62, 8, 28);
+}
+document.querySelectorAll(".card").forEach(el => el.onclick = () => {
   gender = el.dataset.g;
-  document.querySelectorAll(".char").forEach(c => c.classList.toggle("sel", c === el));
+  document.querySelectorAll(".card").forEach(c => c.classList.toggle("sel", c === el));
   $("confirm").disabled = false;
 });
 $("dice").onclick = () => { $("name").value = names[Math.floor(Math.random()*names.length)]; };
 $("confirm").onclick = () => {
   const n = $("name").value.trim() || (gender === "girl" ? "Sable" : "Kane");
-  state.player = { name: n, gender, power: 0 };
-  $("who").textContent = n.toUpperCase() + " // " + gender.toUpperCase();
-  $("squirtLine").textContent = "You pulled me out of their ship. I kept the record. They are not done. Earth is open.";
+  $("who").textContent = n;
+  $("squirtLine").textContent = "You pulled me out of their ship. I kept the record. They are not done.";
   show("bench");
   renderBench();
 };
 
-const state = {
-  wave: 1, cash: 0, base: 20, scrap: 0,
-  placed: [], ranks: { A: 0, B: 0 },
-  unlockedB: false, token: false, tokenTaken: false,
-  waiting: true, player: null
+const S = {
+  wave: 1, cash: 0, base: 20, running: false,
+  towers: [], pads: [], enemies: [], shots: [], pops: [],
+  unlockedB: false, token: null, tokenTaken: false, between: false
 };
-const COSTS = { upA: [0, 8, 14, 22, 34], upB: [0, 10, 16, 24, 36], placeA: 10, placeB: 12 };
-const GRANT = 260;
-const PRICE = { char: 100, A: 80, B: 80 };
+const COST = { upA: [0, 8, 14, 22, 34], upB: [0, 10, 16, 24, 36] };
+let ctx, W, H, last = 0, raf;
 
-let ctx, W, H, enemies, shots, raf, pads;
-function resize() {
+function layout() {
   const c = $("c");
   W = c.width = c.clientWidth * 2;
   H = c.height = c.clientHeight * 2;
   ctx = c.getContext("2d");
 }
 function startFight() {
-  resize();
-  enemies = []; shots = [];
-  pads = [
-    { x: 0.28, y: 0.62, open: true, kind: null },
-    { x: 0.48, y: 0.62, open: false, kind: null },
-    { x: 0.68, y: 0.62, open: false, kind: null },
-    { x: 0.58, y: 0.38, open: false, kind: null }
+  show("fight");
+  layout();
+  Object.assign(S, { wave: 1, cash: 0, base: 20, running: true, towers: [], enemies: [], shots: [], pops: [], unlockedB: false, token: null, tokenTaken: false });
+  S.pads = [
+    { nx: 0.30, ny: 0.70, open: true },
+    { nx: 0.48, ny: 0.70, open: false },
+    { nx: 0.66, ny: 0.70, open: false },
+    { nx: 0.56, ny: 0.40, open: false }
   ];
-  state.wave = 1; state.cash = 0; state.base = 20; state.waiting = true;
-  setPrompt("Tap the lit pad. One tower.");
-  loop();
+  toast("Tap the glowing pad. One tower.");
+  last = performance.now();
   spawnWave();
+  cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(frame);
 }
-function setPrompt(t) { $("prompt").innerHTML = t; }
-function hud() {
-  $("waveLabel").textContent = "WAVE " + state.wave;
-  $("cashLabel").textContent = "$ " + state.cash;
-  $("baseLabel").textContent = "BASE " + state.base;
-  $("upA").disabled = !state.placed.some(p => p.kind === "A" && p.rank < 5) || state.cash < COSTS.upA[nextRank("A")];
-  $("upB").disabled = !state.placed.some(p => p.kind === "B" && p.rank < 5) || state.cash < COSTS.upB[nextRank("B")];
-}
-function nextRank(k) {
-  const t = state.placed.find(p => p.kind === k);
-  return t ? Math.min(5, t.rank + 1) : 1;
-}
-function dmg(kind, rank) { return kind === "A" ? 8 + rank * 6 : 14 + rank * 8; }
-function range(kind, rank) { return kind === "A" ? 70 + rank * 14 : 90 + rank * 16; }
-
-const script = {
-  1: { cash: 8, prompt: "Tap upgrade. Rank changes range.", need: "up" },
-  2: { cash: 10, prompt: "Upgrade again, or place another A. Not both.", need: "choice" },
-  3: { cash: 12, prompt: "New tower. Air only. Place it.", need: "B" },
-  4: { cash: 16, prompt: "Flyers. A plinks them. B burns them down.", need: "fight" },
-  5: { cash: 18, prompt: "One buy, then hold. Watch for the patch.", need: "token" }
+$("start").onclick = () => {
+  show("fight");
+  toast("They were already under you. Hold the base.");
+  setTimeout(startFight, 700);
 };
 
-function spawnWave() {
-  const n = 3 + state.wave;
-  const fly = state.wave >= 4;
-  for (let i = 0; i < n; i++) {
-    const air = fly && (i % 2 === 0 || state.wave === 4);
-    enemies.push({
-      t: -i * 0.55, x: 0.08, y: air ? 0.34 : 0.72, air, hp: air ? 46 : 24, max: air ? 46 : 24, spd: air ? 0.055 : 0.04
-    });
-  }
-  state.waiting = false;
+function dmg(kind, rank) { return kind === "A" ? 12 + rank * 7 : 18 + rank * 9; }
+function range(kind, rank) { return (kind === "A" ? 118 : 150) + rank * 16; }
+function hud() {
+  $("waveLabel").textContent = S.wave;
+  $("cashLabel").textContent = "$" + S.cash;
+  $("baseLabel").textContent = S.base;
+  const a = S.towers.find(t => t.kind === "A");
+  const b = S.towers.find(t => t.kind === "B");
+  const canA = a && a.rank < 5 && S.cash >= COST.upA[a.rank];
+  const canB = b && b.rank < 5 && S.cash >= COST.upB[b.rank];
+  $("upA").disabled = !canA;
+  $("upB").disabled = !canB;
+  $("upA").classList.toggle("pulse", !!canA && S.wave === 1);
+  $("upB").classList.toggle("pulse", !!canB && S.wave >= 4);
+  $("upA").textContent = a ? "Upgrade A  $" + COST.upA[a.rank] : "Upgrade A";
+  $("upB").textContent = b ? "Upgrade B  $" + COST.upB[b.rank] : "Upgrade B";
 }
-function endWave() {
-  const bonus = script[state.wave].cash;
-  state.cash += bonus;
-  if (state.wave === 3) { state.unlockedB = true; pads[3].open = true; }
-  if (state.wave === 2) pads[1].open = true;
-  if (state.wave < 5) {
-    state.wave++;
-    setPrompt("<b>Clear bonus +" + bonus + ".</b> " + script[state.wave].prompt);
-    state.waiting = true;
-    setTimeout(() => { if (state.wave === 5) state.token = true; spawnWave(); }, 900);
-  } else {
-    state.scrap = GRANT;
-    setPrompt("<b>Base held.</b> Patch is on them. Pick who walks out.");
-    setTimeout(() => show("pick"), 700);
-  }
-  hud();
-}
-
-$("c").addEventListener("pointerup", (e) => {
-  const r = $("c").getBoundingClientRect();
-  const x = (e.clientX - r.left) / r.width;
-  const y = (e.clientY - r.top) / r.height;
-  if (state.token && !state.tokenTaken) {
-    state.tokenTaken = true;
-    setPrompt("Patch taken. It goes on the uniform.");
-    return;
-  }
-  const pad = pads.find(p => p.open && !p.kind && Math.hypot(p.x - x, p.y - y) < 0.08);
-  if (!pad) return;
-  const wantB = state.unlockedB && state.wave === 3 && !state.placed.some(p => p.kind === "B");
-  const kind = wantB ? "B" : "A";
-  const cost = kind === "B" ? COSTS.placeB : COSTS.placeA;
-  if (state.wave === 1 && state.placed.length) return;
-  if (state.cash < cost && state.placed.length) return;
-  if (state.placed.length) state.cash -= cost;
-  pad.kind = kind;
-  pad.rank = 1;
-  state.placed.push(pad);
-  if (state.wave === 1) setPrompt(script[1].prompt);
-  hud();
-});
 function upgrade(kind) {
-  const t = state.placed.find(p => p.kind === kind && p.rank < 5);
+  const t = S.towers.find(x => x.kind === kind && x.rank < 5);
   if (!t) return;
-  const cost = (kind === "A" ? COSTS.upA : COSTS.upB)[t.rank];
-  if (state.cash < cost) return;
-  state.cash -= cost;
+  const cost = (kind === "A" ? COST.upA : COST.upB)[t.rank];
+  if (S.cash < cost) return;
+  S.cash -= cost;
   t.rank++;
+  toast(kind + " is rank " + t.rank + ". Range and damage are up.");
   hud();
 }
 $("upA").onclick = () => upgrade("A");
 $("upB").onclick = () => upgrade("B");
 
-function loop() {
-  if ($("fight").classList.contains("hidden")) return;
-  resize();
-  const g = ctx;
-  g.clearRect(0, 0, W, H);
-  g.strokeStyle = "#3a2458"; g.lineWidth = 18;
-  g.beginPath(); g.moveTo(W*0.06, H*0.72); g.lineTo(W*0.92, H*0.72); g.stroke();
-  g.strokeStyle = "#241838"; g.lineWidth = 10;
-  g.beginPath(); g.moveTo(W*0.06, H*0.34); g.lineTo(W*0.92, H*0.34); g.stroke();
-  g.fillStyle = "#39ff88"; g.fillRect(W*0.88, H*0.62, 18, 70);
-  pads.forEach(p => {
-    g.beginPath(); g.arc(p.x*W, p.y*H, 16, 0, 7);
-    g.fillStyle = p.kind ? (p.kind === "B" ? "#39ff88" : "#b14bff") : (p.open ? "#2a1848" : "#14101c");
-    g.fill();
-    if (p.kind) {
-      g.strokeStyle = "rgba(57,255,136,0.35)";
-      g.beginPath(); g.arc(p.x*W, p.y*H, range(p.kind, p.rank), 0, 7); g.stroke();
-      g.fillStyle = "#efeaff"; g.font = "18px sans-serif"; g.fillText(p.rank, p.x*W - 5, p.y*H + 5);
-    }
-  });
-  enemies.forEach(en => {
-    if (en.t < 0) { en.t += 0.016; return; }
-    en.x += en.spd * 0.016 * 60 * 0.01;
-    g.fillStyle = en.air ? "#39ff88" : "#ff4d6d";
-    g.fillRect(en.x*W, en.y*H, 14, 10);
-    g.fillStyle = "#222"; g.fillRect(en.x*W, en.y*H - 6, 14, 3);
-    g.fillStyle = "#39ff88"; g.fillRect(en.x*W, en.y*H - 6, 14 * (en.hp/en.max), 3);
-    if (en.x > 0.9) { state.base = Math.max(0, state.base - (en.air ? 4 : 2)); en.hp = 0; }
-  });
-  state.placed.forEach(t => {
-    const target = enemies.filter(en => en.t >= 0 && en.hp > 0 && (!en.air || t.kind) && (t.kind === "B" ? en.air : true) && Math.hypot((t.x-en.x)*W, (t.y-en.y)*H) < range(t.kind, t.rank)).sort((a,b)=>a.x<b.x?1:-1)[0];
-    if (!target || Math.random() > 0.04) return;
-    const hit = dmg(t.kind, t.rank) * (target.air && t.kind === "A" ? 0.25 : 1);
-    target.hp -= hit;
-    if (target.hp <= 0) state.cash += target.air ? 4 : 2;
-  });
-  if (state.token && !state.tokenTaken) {
-    const px = 0.5 + Math.sin(Date.now()/400)*0.25;
-    g.fillStyle = "#b14bff"; g.fillRect(px*W, H*0.2, 22, 16);
-    g.fillStyle = "#39ff88"; g.fillRect(px*W+4, H*0.2+4, 14, 8);
+function spawnWave() {
+  S.between = false;
+  const n = 3 + S.wave;
+  for (let i = 0; i < n; i++) {
+    const air = S.wave >= 4 && i % 2 === 0;
+    S.enemies.push({
+      nx: -0.12 - i * 0.16,
+      ny: air ? 0.34 : 0.74,
+      air, hp: air ? 70 : 36, max: air ? 70 : 36,
+      spd: air ? 0.075 : 0.055
+    });
   }
-  enemies = enemies.filter(en => en.hp > 0);
-  hud();
-  if (!state.waiting && enemies.length === 0 && state.base > 0) endWave();
-  if (state.base <= 0) setPrompt("Base fell. Meridian does not lose this one — reload.");
-  raf = requestAnimationFrame(loop);
+  if (S.wave === 5) S.token = { nx: -0.2, taken: false };
+}
+function nextWave() {
+  if (S.between) return;
+  S.between = true;
+  const bonus = [0, 10, 12, 14, 16, 18][S.wave];
+  S.cash += bonus;
+  if (S.wave === 2) S.pads[1].open = true;
+  if (S.wave === 3) { S.unlockedB = true; S.pads[3].open = true; }
+  if (S.wave >= 5) {
+    toast("Base held. Pick who wears the patch.");
+    S.running = false;
+    setTimeout(() => { show("pick"); requestAnimationFrame(() => { paintOp($("boyCanvas"), false); paintOp($("girlCanvas"), true); }); }, 600);
+    return;
+  }
+  S.wave++;
+  const lines = {
+    2: "Clear paid. Upgrade A again, or place a second A.",
+    3: "New tower. Air only. Place it on the high pad.",
+    4: "Flyers. A barely scratches them. B burns them down.",
+    5: "One more buy if you have it. Tap the patch when it crosses."
+  };
+  toast("+$" + bonus + ". " + lines[S.wave]);
+  setTimeout(spawnWave, 700);
 }
 
-const bench = { char: 0, A: 0, B: 0, scrap: GRANT };
+function pointer(e) {
+  const r = $("c").getBoundingClientRect();
+  const p = e.touches ? e.touches[0] : e;
+  const x = (p.clientX - r.left) / r.width;
+  const y = (p.clientY - r.top) / r.height;
+  if (S.token && !S.token.taken && Math.hypot(S.token.nx - x, 0.22 - y) < 0.12) {
+    S.token.taken = true;
+    toast("Patch taken. It goes on the uniform.");
+    return;
+  }
+  const pad = S.pads.find(pad => pad.open && !pad.kind && Math.hypot(pad.nx - x, pad.ny - y) < 0.09);
+  if (!pad) return;
+  const needB = S.unlockedB && !S.towers.some(t => t.kind === "B") && S.wave >= 3;
+  const kind = needB ? "B" : "A";
+  if (S.towers.length && S.cash < (kind === "B" ? 12 : 10)) { toast("Not enough cash."); return; }
+  if (S.towers.length) S.cash -= kind === "B" ? 12 : 10;
+  pad.kind = kind;
+  pad.rank = 1;
+  pad.cool = 0;
+  S.towers.push(pad);
+  toast(kind === "B" ? "Air tower live. It ignores ground." : "Tower live. It shoots whatever is in the ring.");
+  hud();
+}
+$("c").addEventListener("pointerdown", pointer);
+
+function frame(now) {
+  const dt = Math.min(0.033, (now - last) / 1000);
+  last = now;
+  if (!S.running) return;
+  layout();
+  const g = ctx;
+  g.clearRect(0, 0, W, H);
+  drawField(g);
+  S.pads.forEach(p => drawPad(g, p));
+  S.towers.forEach(t => {
+    t.cool -= dt;
+    const target = acquire(t);
+    if (target && t.cool <= 0) {
+      t.cool = Math.max(0.28, 0.72 - t.rank * 0.08);
+      S.shots.push({ x: t.nx * W, y: t.ny * H, tx: target.nx * W, ty: target.ny * H, kind: t.kind, dmg: dmg(t.kind, t.rank) * (target.air && t.kind === "A" ? 0.28 : 1), target });
+    }
+    drawTower(g, t);
+  });
+  S.shots = S.shots.filter(s => {
+    s.x += (s.tx - s.x) * 0.35;
+    s.y += (s.ty - s.y) * 0.35;
+    g.fillStyle = s.kind === "B" ? "#3dff9a" : "#e6c1ff";
+    g.beginPath(); g.arc(s.x, s.y, 5, 0, 7); g.fill();
+    if (Math.hypot(s.tx - s.x, s.ty - s.y) < 16) {
+      if (s.target.hp > 0) {
+        s.target.hp -= s.dmg;
+        if (s.target.hp <= 0) {
+          S.cash += s.target.air ? 5 : 3;
+          S.pops.push({ x: s.tx, y: s.ty, t: 0.6, n: s.target.air ? 5 : 3 });
+        }
+      }
+      return false;
+    }
+    return true;
+  });
+  S.enemies.forEach(en => {
+    en.nx += en.spd * dt;
+    drawAlien(g, en);
+    if (en.nx > 0.9 && en.hp > 0) { S.base = Math.max(0, S.base - (en.air ? 5 : 3)); en.hp = 0; }
+  });
+  S.enemies = S.enemies.filter(en => en.hp > 0);
+  S.pops = S.pops.filter(p => (p.t -= dt) > 0);
+  S.pops.forEach(p => { g.fillStyle = "#3dff9a"; g.font = "22px sans-serif"; g.fillText("+$" + p.n, p.x, p.y - 20); });
+  if (S.token && !S.token.taken) {
+    S.token.nx += dt * 0.18;
+    if (S.token.nx > 1.1) S.token.nx = -0.1;
+    drawPatch(g, S.token.nx * W, H * 0.2);
+  }
+  hud();
+  if (S.base <= 0) { toast("Base fell. Tap Start on the home mark and run it again."); S.running = false; return; }
+  if (S.enemies.length === 0 && S.shots.length === 0 && !S.between) nextWave();
+  raf = requestAnimationFrame(frame);
+}
+function acquire(t) {
+  return S.enemies.filter(en => {
+    if (en.hp <= 0) return false;
+    if (t.kind === "B" && !en.air) return false;
+    return Math.hypot((t.nx - en.nx) * W, (t.ny - en.ny) * H) < range(t.kind, t.rank);
+  }).sort((a, b) => b.nx - a.nx)[0];
+}
+function drawField(g) {
+  const grd = g.createLinearGradient(0, 0, 0, H);
+  grd.addColorStop(0, "#1a1030"); grd.addColorStop(1, "#142016");
+  g.fillStyle = grd; g.fillRect(0, 0, W, H);
+  g.strokeStyle = "rgba(194,107,255,0.15)";
+  for (let i = 0; i < 6; i++) { g.beginPath(); g.moveTo(0, H*0.2*i); g.lineTo(W, H*0.2*i); g.stroke(); }
+  g.fillStyle = "#3b2a22";
+  g.fillRect(0, H*0.68, W, H*0.12);
+  g.fillStyle = "#5a4030";
+  g.fillRect(0, H*0.68, W, 6);
+  g.fillStyle = "#1c2430";
+  g.fillRect(0, H*0.28, W, H*0.1);
+  g.fillStyle = "#101820";
+  g.fillRect(W*0.86, H*0.58, W*0.12, H*0.28);
+  g.fillStyle = "#3dff9a";
+  g.fillRect(W*0.9, H*0.62, 8, 28);
+  g.fillStyle = "#c26bff";
+  g.font = "20px sans-serif";
+  g.fillText("BASE", W*0.875, H*0.56);
+}
+function drawPad(g, p) {
+  const x = p.nx * W, y = p.ny * H;
+  g.beginPath(); g.arc(x, y, 22, 0, 7);
+  g.fillStyle = p.kind ? "rgba(0,0,0,0.2)" : (p.open ? "rgba(61,255,154,0.28)" : "rgba(255,255,255,0.04)");
+  g.fill();
+  g.strokeStyle = p.open && !p.kind ? "#3dff9a" : "rgba(255,255,255,0.15)";
+  g.stroke();
+}
+function drawTower(g, t) {
+  const x = t.nx * W, y = t.ny * H;
+  g.strokeStyle = "rgba(61,255,154,0.28)";
+  g.beginPath(); g.arc(x, y, range(t.kind, t.rank), 0, 7); g.stroke();
+  g.fillStyle = "#1a1024";
+  g.fillRect(x - 16, y - 10, 32, 22);
+  g.fillStyle = t.kind === "B" ? "#3dff9a" : "#c26bff";
+  g.fillRect(x - 18, y - 16, 36, 8);
+  if (t.kind === "B") g.fillRect(x - 4, y - 28, 8, 16);
+  else g.fillRect(x + 6, y - 22, 16, 5);
+  g.fillStyle = "#fff";
+  g.font = "16px sans-serif";
+  g.fillText(t.rank, x - 4, y + 4);
+}
+function drawAlien(g, en) {
+  const x = en.nx * W, y = en.ny * H;
+  g.save(); g.translate(x, y);
+  if (en.air) {
+    g.fillStyle = "#173028";
+    g.beginPath(); g.ellipse(0, 0, 22, 9, 0, 0, 7); g.fill();
+    g.fillStyle = "#3dff9a";
+    g.beginPath(); g.ellipse(0, -2, 8, 5, 0, 0, 7); g.fill();
+    g.fillStyle = "#9dffc8";
+    g.fillRect(-16, 6, 6, 8); g.fillRect(10, 6, 6, 8);
+  } else {
+    g.fillStyle = "#6f8f62";
+    g.fillRect(-8, -18, 16, 22);
+    g.fillStyle = "#d7ff6a";
+    g.fillRect(-5, -16, 3, 3); g.fillRect(2, -16, 3, 3);
+    g.fillStyle = "#4e6848";
+    g.fillRect(-10, 2, 5, 10); g.fillRect(5, 2, 5, 10);
+  }
+  g.fillStyle = "#201820";
+  g.fillRect(-12, -28, 24, 4);
+  g.fillStyle = "#ff4d6d";
+  g.fillRect(-12, -28, 24 * Math.max(0, en.hp / en.max), 4);
+  g.restore();
+}
+function drawPatch(g, x, y) {
+  g.fillStyle = "#241433";
+  g.fillRect(x, y, 28, 20);
+  g.strokeStyle = "#3dff9a";
+  g.strokeRect(x, y, 28, 20);
+  g.fillStyle = "#c26bff";
+  g.fillRect(x + 6, y + 6, 16, 8);
+}
+
+const bench = { char: 0, A: 0, B: 0, scrap: 260 };
 function renderBench() {
-  bench.scrap = state.scrap;
-  $("scrapLabel").textContent = "SCRAP " + bench.scrap;
+  $("scrapLabel").textContent = bench.scrap;
   $("charRank").textContent = bench.char;
   $("floorA").textContent = bench.A;
   $("floorB").textContent = bench.B;
-  $("buyChar").disabled = bench.char >= 5 || bench.scrap < PRICE.char;
-  $("buyA").disabled = bench.A >= 5 || bench.scrap < PRICE.A;
-  $("buyB").disabled = bench.B >= 5 || bench.scrap < PRICE.B;
-  $("buyChar").textContent = bench.char >= 5 ? "Max" : "Buy " + PRICE.char;
-  $("buyA").textContent = bench.A >= 5 ? "Max" : "Buy " + PRICE.A;
-  $("buyB").textContent = bench.B >= 5 ? "Max" : "Buy " + PRICE.B;
+  $("auraLabel").textContent = bench.char;
+  $("buyChar").disabled = bench.char >= 5 || bench.scrap < 100;
+  $("buyA").disabled = bench.A >= 5 || bench.scrap < 80;
+  $("buyB").disabled = bench.B >= 5 || bench.scrap < 80;
 }
 function buy(key, price, line) {
   if (bench.scrap < price) return;
-  bench.scrap -= price;
-  bench[key]++;
-  state.scrap = bench.scrap;
-  $("log").textContent = line;
-  $("squirtLine").textContent = key === "char"
-    ? "Fine. Your little aura. Try not to trip on it."
-    : "Floor raised. I still do not shoot. That is your button.";
+  bench.scrap -= price; bench[key]++;
+  $("squirtLine").textContent = line;
   renderBench();
 }
-$("buyChar").onclick = () => buy("char", PRICE.char, "Character power rank raised. Next lane towers hit harder.");
-$("buyA").onclick = () => buy("A", PRICE.A, "Tower A floor raised. Next Earth lane starts higher.");
-$("buyB").onclick = () => buy("B", PRICE.B, "Tower B floor raised. Air gun keeps its rank.");
-$("buyShip").onclick = () => { $("squirtLine").textContent = "No hull. Stop touching it."; };
+$("buyChar").onclick = () => buy("char", 100, "Aura raised. I still do not shoot.");
+$("buyA").onclick = () => buy("A", 80, "Tower A floor raised.");
+$("buyB").onclick = () => buy("B", 80, "Air tower floor raised.");
 </script>
 </body>
 </html>
