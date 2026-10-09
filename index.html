@@ -3,270 +3,292 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-<title>PROGRAM MERIDIAN — Earth Lane</title>
+<title>PROGRAM MERIDIAN — Earth</title>
 <style>
-  html, body { margin: 0; height: 100%; background: #05040a; color: #f4eeff; font-family: "Avenir Next", system-ui, sans-serif; overflow: hidden; }
+  html, body { margin: 0; height: 100%; background: #87b4dc; color: #102018; font-family: "Avenir Next", system-ui, sans-serif; overflow: hidden; }
   #app { height: 100dvh; display: flex; flex-direction: column; }
-  .top { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: calc(8px + env(safe-area-inset-top)) 12px 8px; }
-  .pill { background: rgba(8,6,14,.78); border: 1px solid rgba(194,107,255,.4); border-radius: 12px; padding: 8px 10px; font-size: 11px; letter-spacing: .12em; }
+  .top { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: calc(8px + env(safe-area-inset-top)) 12px 8px; background: rgba(8, 18, 12, .55); }
+  .pill { background: rgba(8,16,12,.72); border: 1px solid rgba(61,255,154,.35); border-radius: 12px; padding: 8px 10px; font-size: 11px; letter-spacing: .12em; color: #e8ffe8; }
   .pill b { display: block; color: #3dff9a; font-size: 16px; letter-spacing: 0; margin-top: 2px; }
   #view { flex: 1; min-height: 0; position: relative; touch-action: none; }
   canvas { width: 100%; height: 100%; display: block; }
-  .toast { position: absolute; left: 10px; right: 10px; top: 8px; background: rgba(6,5,12,.78); border: 1px solid rgba(61,255,154,.4); border-radius: 12px; padding: 8px 10px; font-size: 13px; pointer-events: none; }
-  .dock { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 8px 12px calc(12px + env(safe-area-inset-bottom)); }
-  button { font-family: inherit; min-height: 52px; border-radius: 14px; border: 1px solid rgba(194,107,255,.7); background: #160e22; color: white; font-size: 15px; }
+  .toast { position: absolute; left: 10px; right: 10px; top: 8px; background: rgba(8,16,12,.78); color: #f4fff4; border: 1px solid rgba(61,255,154,.45); border-radius: 12px; padding: 8px 10px; font-size: 13px; pointer-events: none; }
+  .dock { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 8px 12px calc(12px + env(safe-area-inset-bottom)); background: rgba(8,18,12,.55); }
+  button { font-family: inherit; min-height: 52px; border-radius: 14px; border: 1px solid #1d6b3a; background: #102818; color: #eaffea; font-size: 16px; }
   button:disabled { opacity: .35; }
-  #home { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; justify-content: flex-end; padding: 24px 18px calc(18px + env(safe-area-inset-bottom)); background: radial-gradient(circle at 50% 20%, #2a1848, #07060c 60%); }
-  #home h1 { margin: 0 0 8px; font-size: 28px; }
-  #home p { color: #c8bddc; margin: 0 0 16px; }
+  #home { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; justify-content: flex-end; padding: 24px 18px calc(18px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgba(120,170,210,.2), rgba(8,18,12,.82)); }
+  #home h1 { margin: 0 0 8px; font-size: 32px; color: white; }
+  #home p { color: #e7f6ea; margin: 0 0 16px; }
   .hidden { display: none !important; }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 <div id="app">
   <section id="home">
-    <h1>Earth lane</h1>
-    <p>Drag to look around. Pinch to zoom. Tap a pad to build.</p>
-    <button id="start">Start Game</button>
+    <h1>Earth</h1>
+    <p>Dirt road. Open sky. Drag to look around the base.</p>
+    <button id="start" type="button">Start Game</button>
   </section>
   <div class="top">
     <div class="pill">WAVE<b id="wave">1</b></div>
     <div class="pill">CASH<b id="cash">$0</b></div>
     <div class="pill">BASE<b id="base">24</b></div>
   </div>
-  <div id="view"><div class="toast" id="toast">Drag the world. Tap a green pad.</div></div>
+  <div id="view"><div class="toast" id="toast">Loading Earth…</div></div>
   <div class="dock">
-    <button id="upA" disabled>Upgrade A</button>
-    <button id="upB" disabled>Upgrade B</button>
+    <button id="upA" type="button" disabled>Upgrade A</button>
+    <button id="upB" type="button" disabled>Upgrade B</button>
   </div>
 </div>
-<script type="importmap">
-{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
-</script>
-<script type="module">
-import * as THREE from "three";
-const ART = "https://raw.githubusercontent.com/tygriffin045/meridian-bench/main/art";
+<script>
 const $ = (id) => document.getElementById(id);
 const toast = (t) => { $("toast").textContent = t; };
-const view = $("view");
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.setSize(view.clientWidth, view.clientHeight);
-view.appendChild(renderer.domElement);
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x07060f);
-scene.fog = new THREE.Fog(0x120818, 18, 70);
-const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 200);
-camera.position.set(0, 14, 18);
-const clock = new THREE.Clock();
-scene.add(new THREE.AmbientLight(0x6a5a88, 0.55));
-const key = new THREE.DirectionalLight(0xc9b6ff, 1.1);
-key.position.set(8, 18, 6);
-scene.add(key);
-const green = new THREE.PointLight(0x39ff88, 8, 18);
-green.position.set(-6, 3, 2);
-scene.add(green);
-const purple = new THREE.PointLight(0xb14bff, 10, 30);
-purple.position.set(0, 8, -16);
-scene.add(purple);
+const ART = "https://raw.githubusercontent.com/tygriffin045/meridian-bench/main/art";
+if (!window.THREE) {
+  toast("3D failed to load. Check signal and reload.");
+  $("start").textContent = "Reload";
+  $("start").onclick = () => location.reload();
+} else {
+  const THREE = window.THREE;
+  const view = $("view");
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  renderer.setSize(view.clientWidth || 390, view.clientHeight || 500);
+  view.insertBefore(renderer.domElement, view.firstChild);
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x8ec6ef);
+  scene.fog = new THREE.Fog(0xb7d7ef, 28, 90);
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 220);
+  scene.add(new THREE.AmbientLight(0xfff4e0, 0.65));
+  const sun = new THREE.DirectionalLight(0xfff1c9, 1.05);
+  sun.position.set(-12, 22, 8);
+  scene.add(sun);
+  scene.add(new THREE.HemisphereLight(0x9fd0ff, 0x3d6b32, 0.45));
 
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 70), new THREE.MeshStandardMaterial({ color: 0x14110c, roughness: 0.9 }));
-ground.rotation.x = -Math.PI / 2;
-scene.add(ground);
-const road = new THREE.Mesh(new THREE.PlaneGeometry(6, 46), new THREE.MeshStandardMaterial({ color: 0x2a211c, roughness: 0.7, metalness: 0.2 }));
-road.rotation.x = -Math.PI / 2;
-road.position.y = 0.02;
-scene.add(road);
-for (let i = -18; i <= 18; i += 4) {
-  const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.04, 1.4), new THREE.MeshStandardMaterial({ color: 0x3dff9a, emissive: 0x14663a }));
-  stripe.position.set(0, 0.05, i);
-  scene.add(stripe);
-}
-const gate = new THREE.Mesh(new THREE.BoxGeometry(8, 5, 1.2), new THREE.MeshStandardMaterial({ color: 0x1a1424, emissive: 0x3a1860, metalness: 0.4 }));
-gate.position.set(0, 2.5, -22);
-scene.add(gate);
-const sky = new THREE.Mesh(new THREE.SphereGeometry(90, 24, 16), new THREE.MeshBasicMaterial({ color: 0x1a1030, side: THREE.BackSide }));
-scene.add(sky);
-
-const loader = new THREE.TextureLoader();
-loader.setCrossOrigin("anonymous");
-function tex(name) {
-  const t = loader.load(ART + "/" + name + ".png");
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
-}
-const maps = { ground: tex("ground"), flyer: tex("flyer"), towerA: tex("towerA"), towerB: tex("towerB") };
-function billboard(map, w, h) {
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false }));
-  return m;
-}
-
-const pads = [
-  { x: -3.4, z: 6, open: true },
-  { x: 3.4, z: 6, open: false },
-  { x: -3.4, z: -2, open: false },
-  { x: 3.4, z: -8, open: false }
-].map((p) => {
-  const ring = new THREE.Mesh(new THREE.RingGeometry(0.7, 0.95, 28), new THREE.MeshBasicMaterial({ color: 0x3dff9a, side: THREE.DoubleSide, transparent: true, opacity: 0.85 }));
-  ring.rotation.x = -Math.PI / 2;
-  ring.position.set(p.x, 0.08, p.z);
-  ring.visible = p.open;
-  scene.add(ring);
-  return { ...p, ring, kind: null, rank: 0, cool: 0, mesh: null };
-});
-
-const S = { wave: 1, cash: 0, base: 24, running: false, enemies: [], shots: [], between: false, unlockedB: false };
-const COST = { A: [0, 8, 14, 22, 34], B: [0, 10, 16, 24, 36] };
-function hud() {
-  $("wave").textContent = S.wave;
-  $("cash").textContent = "$" + S.cash;
-  $("base").textContent = S.base;
-  const a = pads.find((p) => p.kind === "A");
-  const b = pads.find((p) => p.kind === "B");
-  $("upA").disabled = !(a && a.rank < 5 && S.cash >= COST.A[a.rank]);
-  $("upB").disabled = !(b && b.rank < 5 && S.cash >= COST.B[b.rank]);
-  $("upA").textContent = a ? "Upgrade A  $" + COST.A[a.rank] : "Upgrade A";
-  $("upB").textContent = b ? "Upgrade B  $" + COST.B[b.rank] : "Upgrade B";
-}
-function upgrade(kind) {
-  const t = pads.find((p) => p.kind === kind && p.rank < 5);
-  if (!t || S.cash < COST[kind][t.rank]) return;
-  S.cash -= COST[kind][t.rank];
-  t.rank++;
-  t.mesh.scale.setScalar(1 + t.rank * 0.06);
-  toast(kind + " rank " + t.rank);
-  hud();
-}
-$("upA").onclick = () => upgrade("A");
-$("upB").onclick = () => upgrade("B");
-function spawn() {
-  S.between = false;
-  const n = 3 + S.wave;
-  for (let i = 0; i < n; i++) {
-    const air = S.wave >= 4 && i % 2 === 0;
-    const mesh = billboard(air ? maps.flyer : maps.ground, air ? 2.4 : 1.5, air ? 1.8 : 2.4);
-    mesh.position.set(air ? 0.8 : 0, air ? 2.4 : 1.2, 16 + i * 3);
-    scene.add(mesh);
-    S.enemies.push({ mesh, air, hp: air ? 78 : 40, max: air ? 78 : 40, spd: air ? 2.4 : 1.7, z: 16 + i * 3 });
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(48, 48), new THREE.MeshLambertMaterial({ color: 0x3f7a3a }));
+  ground.rotation.x = -Math.PI / 2;
+  scene.add(ground);
+  const dirt = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 52), new THREE.MeshLambertMaterial({ color: 0x7a6244 }));
+  dirt.rotation.x = -Math.PI / 2;
+  dirt.position.y = 0.03;
+  scene.add(dirt);
+  for (let i = -20; i <= 18; i += 3.2) {
+    const rut = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.04, 1.2), new THREE.MeshLambertMaterial({ color: 0xcbb98a }));
+    rut.position.set(0, 0.05, i);
+    scene.add(rut);
   }
-}
-function place(pad) {
-  const needB = S.unlockedB && !pads.some((p) => p.kind === "B") && S.wave >= 3;
-  const kind = needB ? "B" : "A";
-  if (pads.some((p) => p.kind) && S.cash < (kind === "B" ? 12 : 10)) { toast("Not enough cash."); return; }
-  if (pads.some((p) => p.kind)) S.cash -= kind === "B" ? 12 : 10;
-  pad.kind = kind; pad.rank = 1; pad.ring.visible = false;
-  const mesh = billboard(kind === "B" ? maps.towerB : maps.towerA, 2.2, 2.4);
-  mesh.position.set(pad.x, 1.2, pad.z);
-  scene.add(mesh);
-  pad.mesh = mesh;
-  toast(kind === "B" ? "Air tower live." : "Tower live.");
-  hud();
-}
-function nextWave() {
-  if (S.between) return;
-  S.between = true;
-  const bonus = [0, 12, 14, 16, 18, 20][S.wave];
-  S.cash += bonus;
-  if (S.wave === 2) { pads[1].open = true; pads[1].ring.visible = true; }
-  if (S.wave === 3) { S.unlockedB = true; pads[3].open = true; pads[3].ring.visible = true; }
-  if (S.wave >= 5) { toast("Base held."); S.running = false; return; }
-  S.wave++;
-  toast("+$" + bonus + ". Drag to look. Tap a pad.");
-  setTimeout(spawn, 700);
-}
-let yaw = 0.15, pitch = 0.85, dist = 22, look = new THREE.Vector3(0, 1, 0);
-function applyCam() {
-  camera.position.set(look.x + Math.sin(yaw) * Math.cos(pitch) * dist, look.y + Math.sin(pitch) * dist, look.z + Math.cos(yaw) * Math.cos(pitch) * dist);
-  camera.lookAt(look);
-}
-applyCam();
-let dragging = false, moved = 0, lx = 0, ly = 0, pointers = new Map();
-renderer.domElement.addEventListener("pointerdown", (e) => { pointers.set(e.pointerId, e); dragging = true; moved = 0; lx = e.clientX; ly = e.clientY; });
-renderer.domElement.addEventListener("pointermove", (e) => {
-  if (!pointers.has(e.pointerId)) return;
-  pointers.set(e.pointerId, e);
-  const dx = e.clientX - lx, dy = e.clientY - ly;
-  moved += Math.abs(dx) + Math.abs(dy);
-  lx = e.clientX; ly = e.clientY;
-  if (pointers.size >= 2) return;
-  yaw -= dx * 0.008;
-  pitch = Math.max(0.15, Math.min(1.25, pitch + dy * 0.006));
-  look.x = Math.max(-8, Math.min(8, look.x - dx * 0.01));
-  look.z = Math.max(-16, Math.min(12, look.z + dy * 0.02));
-  applyCam();
-});
-renderer.domElement.addEventListener("pointerup", (e) => {
-  pointers.delete(e.pointerId);
-  if (moved < 12 && S.running) {
-    const rect = renderer.domElement.getBoundingClientRect();
-    const ndc = new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
-    const ray = new THREE.Raycaster();
-    ray.setFromCamera(ndc, camera);
-    const hit = ray.intersectObject(ground)[0];
-    if (hit) {
-      const pad = pads.find((p) => p.open && !p.kind && Math.hypot(p.x - hit.point.x, p.z - hit.point.z) < 1.6);
-      if (pad) place(pad);
+  function tree(x, z) {
+    const g = new THREE.Group();
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.24, 1.4, 6), new THREE.MeshLambertMaterial({ color: 0x6a4a2c }));
+    trunk.position.y = 0.7;
+    const top = new THREE.Mesh(new THREE.ConeGeometry(1.1, 2.4, 7), new THREE.MeshLambertMaterial({ color: 0x2f6b34 }));
+    top.position.y = 2.2;
+    g.add(trunk, top);
+    g.position.set(x, 0, z);
+    scene.add(g);
+  }
+  [[-8, 8], [-10, -2], [-7, -12], [8, 10], [11, 0], [9, -14], [-12, 14], [13, -8]].forEach((p) => tree(p[0], p[1]));
+  const rockMat = new THREE.MeshLambertMaterial({ color: 0x8d8478 });
+  [[-5, 12], [5.5, -4], [-6, -16], [6, 16]].forEach((p) => {
+    const r = new THREE.Mesh(new THREE.DodecahedronGeometry(0.55), rockMat);
+    r.position.set(p[0], 0.3, p[1]);
+    scene.add(r);
+  });
+  const base = new THREE.Group();
+  const bunker = new THREE.Mesh(new THREE.BoxGeometry(8, 3.2, 4), new THREE.MeshLambertMaterial({ color: 0x6e6a62 }));
+  bunker.position.y = 1.6;
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(8.4, 0.35, 4.4), new THREE.MeshLambertMaterial({ color: 0x3a3f38 }));
+  roof.position.y = 3.3;
+  const door = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.1, 0.2), new THREE.MeshLambertMaterial({ color: 0x1c241c, emissive: 0x14331f }));
+  door.position.set(0, 1.05, 2.05);
+  const light = new THREE.PointLight(0x39ff88, 1.2, 10);
+  light.position.set(0, 2.2, 2.4);
+  base.add(bunker, roof, door, light);
+  base.position.set(0, 0, -22);
+  scene.add(base);
+  const rift = new THREE.Mesh(new THREE.PlaneGeometry(10, 16), new THREE.MeshBasicMaterial({ color: 0xb14bff, transparent: true, opacity: 0.55, side: THREE.DoubleSide }));
+  rift.position.set(10, 14, -30);
+  rift.rotation.y = -0.4;
+  scene.add(rift);
+
+  const loader = new THREE.TextureLoader();
+  loader.setCrossOrigin("anonymous");
+  const maps = {};
+  ["ground", "flyer", "towerA", "towerB"].forEach((n) => { maps[n] = loader.load(ART + "/" + n + ".png"); });
+  function card(map, w, h) {
+    return new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map, transparent: true, side: THREE.DoubleSide, depthWrite: false }));
+  }
+  const pads = [
+    { x: -3.6, z: 6, open: true },
+    { x: 3.6, z: 6, open: false },
+    { x: -3.6, z: -2, open: false },
+    { x: 3.6, z: -8, open: false }
+  ].map((p) => {
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.7, 0.98, 28), new THREE.MeshBasicMaterial({ color: 0x39ff88, side: THREE.DoubleSide }));
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(p.x, 0.08, p.z);
+    ring.visible = p.open;
+    scene.add(ring);
+    return Object.assign(p, { ring, kind: null, rank: 0, cool: 0, mesh: null });
+  });
+  const S = { wave: 1, cash: 0, base: 24, running: false, enemies: [], shots: [], between: false, unlockedB: false };
+  const COST = { A: [0, 8, 14, 22, 34], B: [0, 10, 16, 24, 36] };
+  function hud() {
+    $("wave").textContent = S.wave;
+    $("cash").textContent = "$" + S.cash;
+    $("base").textContent = S.base;
+    const a = pads.find((p) => p.kind === "A");
+    const b = pads.find((p) => p.kind === "B");
+    $("upA").disabled = !(a && a.rank < 5 && S.cash >= COST.A[a.rank]);
+    $("upB").disabled = !(b && b.rank < 5 && S.cash >= COST.B[b.rank]);
+    $("upA").textContent = a ? "Upgrade A  $" + COST.A[a.rank] : "Upgrade A";
+    $("upB").textContent = b ? "Upgrade B  $" + COST.B[b.rank] : "Upgrade B";
+  }
+  function upgrade(kind) {
+    const t = pads.find((p) => p.kind === kind && p.rank < 5);
+    if (!t || S.cash < COST[kind][t.rank]) return;
+    S.cash -= COST[kind][t.rank];
+    t.rank++;
+    if (t.mesh) t.mesh.scale.setScalar(1 + t.rank * 0.06);
+    toast(kind + " rank " + t.rank);
+    hud();
+  }
+  $("upA").onclick = () => upgrade("A");
+  $("upB").onclick = () => upgrade("B");
+  function spawn() {
+    S.between = false;
+    for (let i = 0; i < 3 + S.wave; i++) {
+      const air = S.wave >= 4 && i % 2 === 0;
+      const mesh = card(air ? maps.flyer : maps.ground, air ? 2.4 : 1.5, air ? 1.8 : 2.4);
+      mesh.position.set(air ? 0.6 : 0, air ? 2.6 : 1.2, 16 + i * 3);
+      scene.add(mesh);
+      S.enemies.push({ mesh, air, hp: air ? 78 : 40, max: air ? 78 : 40, spd: air ? 2.4 : 1.7, z: 16 + i * 3 });
     }
   }
-  dragging = pointers.size > 0;
-});
-renderer.domElement.addEventListener("wheel", (e) => { dist = Math.max(8, Math.min(40, dist + Math.sign(e.deltaY))); applyCam(); }, { passive: true });
-
-function tick() {
-  const dt = Math.min(0.033, clock.getDelta());
-  if (S.running) {
-    pads.forEach((t) => {
-      if (!t.kind) return;
-      t.cool -= dt;
-      const target = S.enemies.filter((en) => en.hp > 0 && (t.kind === "B" ? en.air : true) && t.mesh.position.distanceTo(en.mesh.position) < (t.kind === "A" ? 9 : 12) + t.rank).sort((a, b) => a.z - b.z)[0];
-      if (target && t.cool <= 0) {
-        t.cool = 0.55;
-        const shot = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), new THREE.MeshBasicMaterial({ color: t.kind === "B" ? 0x39ff88 : 0xe6c1ff }));
-        shot.position.copy(t.mesh.position);
-        scene.add(shot);
-        S.shots.push({ mesh: shot, target, dmg: (t.kind === "A" ? 14 : 22) + t.rank * 8, kind: t.kind });
-      }
-    });
-    S.shots = S.shots.filter((s) => {
-      if (s.target.hp <= 0) { scene.remove(s.mesh); return false; }
-      s.mesh.position.lerp(s.target.mesh.position, 0.35);
-      if (s.mesh.position.distanceTo(s.target.mesh.position) < 0.4) {
-        s.target.hp -= s.dmg * (s.target.air && s.kind === "A" ? 0.3 : 1);
-        if (s.target.hp <= 0) { S.cash += s.target.air ? 5 : 3; scene.remove(s.target.mesh); }
-        scene.remove(s.mesh);
-        return false;
-      }
-      return true;
-    });
-    S.enemies.forEach((en) => {
-      if (en.hp <= 0) return;
-      en.z -= en.spd * dt;
-      en.mesh.position.z = en.z;
-      en.mesh.lookAt(camera.position);
-      if (en.z < -21) { S.base = Math.max(0, S.base - (en.air ? 5 : 3)); en.hp = 0; scene.remove(en.mesh); }
-    });
-    S.enemies = S.enemies.filter((en) => en.hp > 0);
+  function place(pad) {
+    const needB = S.unlockedB && !pads.some((p) => p.kind === "B") && S.wave >= 3;
+    const kind = needB ? "B" : "A";
+    if (pads.some((p) => p.kind) && S.cash < (kind === "B" ? 12 : 10)) { toast("Not enough cash."); return; }
+    if (pads.some((p) => p.kind)) S.cash -= kind === "B" ? 12 : 10;
+    pad.kind = kind; pad.rank = 1; pad.ring.visible = false;
+    const mesh = card(kind === "B" ? maps.towerB : maps.towerA, 2.2, 2.4);
+    mesh.position.set(pad.x, 1.2, pad.z);
+    scene.add(mesh);
+    pad.mesh = mesh;
+    toast(kind === "B" ? "Air tower live." : "Tower on the road.");
     hud();
-    if (S.base <= 0) { toast("Base fell. Reload."); S.running = false; }
-    else if (!S.enemies.length && !S.shots.length && !S.between) nextWave();
   }
-  renderer.render(scene, camera);
-  requestAnimationFrame(tick);
+  function nextWave() {
+    if (S.between) return;
+    S.between = true;
+    const bonus = [0, 12, 14, 16, 18, 20][S.wave];
+    S.cash += bonus;
+    if (S.wave === 2) { pads[1].open = true; pads[1].ring.visible = true; }
+    if (S.wave === 3) { S.unlockedB = true; pads[3].open = true; pads[3].ring.visible = true; }
+    if (S.wave >= 5) { toast("Earth base held."); S.running = false; return; }
+    S.wave++;
+    toast("+$" + bonus + ". Drag to look around Earth.");
+    setTimeout(spawn, 700);
+  }
+  let yaw = 0.2, pitch = 0.72, dist = 20, look = new THREE.Vector3(0, 1, -2);
+  function applyCam() {
+    camera.position.set(
+      look.x + Math.sin(yaw) * Math.cos(pitch) * dist,
+      look.y + Math.sin(pitch) * dist,
+      look.z + Math.cos(yaw) * Math.cos(pitch) * dist
+    );
+    camera.lookAt(look);
+  }
+  applyCam();
+  let moved = 0, lx = 0, ly = 0;
+  const pointers = new Map();
+  renderer.domElement.addEventListener("pointerdown", (e) => { pointers.set(e.pointerId, 1); moved = 0; lx = e.clientX; ly = e.clientY; });
+  renderer.domElement.addEventListener("pointermove", (e) => {
+    if (!pointers.has(e.pointerId)) return;
+    const dx = e.clientX - lx, dy = e.clientY - ly;
+    moved += Math.abs(dx) + Math.abs(dy);
+    lx = e.clientX; ly = e.clientY;
+    yaw -= dx * 0.008;
+    pitch = Math.max(0.18, Math.min(1.2, pitch + dy * 0.005));
+    look.x = Math.max(-10, Math.min(10, look.x - dx * 0.012));
+    look.z = Math.max(-18, Math.min(14, look.z + dy * 0.02));
+    applyCam();
+  });
+  renderer.domElement.addEventListener("pointerup", (e) => {
+    pointers.delete(e.pointerId);
+    if (moved < 14 && S.running) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      const ndc = new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
+      const ray = new THREE.Raycaster();
+      ray.setFromCamera(ndc, camera);
+      const hit = ray.intersectObject(ground)[0];
+      if (hit) {
+        const pad = pads.find((p) => p.open && !p.kind && Math.hypot(p.x - hit.point.x, p.z - hit.point.z) < 1.8);
+        if (pad) place(pad);
+      }
+    }
+  });
+  function fit() {
+    const w = view.clientWidth || window.innerWidth;
+    const h = view.clientHeight || 400;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+  }
+  fit();
+  addEventListener("resize", fit);
+  function tick() {
+    if (S.running) {
+      pads.forEach((t) => {
+        if (!t.kind) return;
+        t.cool -= 0.016;
+        const target = S.enemies.filter((en) => en.hp > 0 && (t.kind === "B" ? en.air : true) && t.mesh.position.distanceTo(en.mesh.position) < 9 + t.rank).sort((a, b) => a.z - b.z)[0];
+        if (target && t.cool <= 0) {
+          t.cool = 0.55;
+          const shot = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), new THREE.MeshBasicMaterial({ color: t.kind === "B" ? 0x39ff88 : 0xe6c1ff }));
+          shot.position.copy(t.mesh.position);
+          scene.add(shot);
+          S.shots.push({ mesh: shot, target, dmg: (t.kind === "A" ? 14 : 22) + t.rank * 8, kind: t.kind });
+        }
+      });
+      S.shots = S.shots.filter((s) => {
+        if (s.target.hp <= 0) { scene.remove(s.mesh); return false; }
+        s.mesh.position.lerp(s.target.mesh.position, 0.35);
+        if (s.mesh.position.distanceTo(s.target.mesh.position) < 0.45) {
+          s.target.hp -= s.dmg * (s.target.air && s.kind === "A" ? 0.3 : 1);
+          if (s.target.hp <= 0) { S.cash += s.target.air ? 5 : 3; scene.remove(s.target.mesh); }
+          scene.remove(s.mesh);
+          return false;
+        }
+        return true;
+      });
+      S.enemies.forEach((en) => {
+        if (en.hp <= 0) return;
+        en.z -= en.spd * 0.016;
+        en.mesh.position.z = en.z;
+        en.mesh.lookAt(camera.position);
+        if (en.z < -21) { S.base = Math.max(0, S.base - (en.air ? 5 : 3)); en.hp = 0; scene.remove(en.mesh); }
+      });
+      S.enemies = S.enemies.filter((en) => en.hp > 0);
+      hud();
+      if (S.base <= 0) { toast("Base fell. Reload."); S.running = false; }
+      else if (!S.enemies.length && !S.shots.length && !S.between) nextWave();
+    }
+    renderer.render(scene, camera);
+    requestAnimationFrame(tick);
+  }
+  tick();
+  toast("Earth loaded. Hit Start.");
+  $("start").onclick = () => {
+    $("home").classList.add("hidden");
+    fit();
+    S.running = true;
+    spawn();
+    toast("Earth. Drag to look. Tap a green pad.");
+    hud();
+  };
 }
-tick();
-addEventListener("resize", () => {
-  camera.aspect = view.clientWidth / view.clientHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(view.clientWidth, view.clientHeight);
-});
-$("start").onclick = () => {
-  $("home").classList.add("hidden");
-  S.running = true;
-  spawn();
-  toast("Drag any direction to look around. Tap a green pad.");
-  hud();
-};
 </script>
 </body>
 </html>
